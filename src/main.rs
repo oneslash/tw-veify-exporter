@@ -1,5 +1,6 @@
 use axum::{http::Response, response::IntoResponse, routing::get, Router};
 use prometheus::{labels, opts, register_gauge, Encoder, Gauge, TextEncoder};
+use reqwest::StatusCode;
 use twillo::TwilloAPI;
 mod twillo;
 
@@ -49,7 +50,7 @@ async fn metrics() -> impl IntoResponse {
 
     let twillo = TwilloAPI::new(&app_name, &sid, &token);
     let encoder = TextEncoder::new();
-    let summary = twillo.get_verification_summary("", None).await.unwrap();
+    let summary = twillo.get_verification_summary("2025-02-21T00:00:00Z", None).await.unwrap();
 
     TOTAL_VERIFICATIONS.set(summary.total_attempts as f64);
     FAILED_VERIFICATIONS.set(summary.total_unconverted as f64);
@@ -58,5 +59,5 @@ async fn metrics() -> impl IntoResponse {
     let mut buffer = vec![];
     encoder.encode(&metric_families, &mut buffer).unwrap();
 
-    return buffer;
+    return (StatusCode::OK, String::from_utf8(buffer).unwrap());
 }
